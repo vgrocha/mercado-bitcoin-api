@@ -7,6 +7,10 @@ The library abstract all the plumbing necessary to correctly interact
 with the API. The returned value is the JSON parsed into a Clojure
 map, where the dates are clj-time objects.
 
+There is the core namespace which is responsible for the basics of
+communication and then the 'btc' and 'ltc' namespaces, which
+specialize the communication for the specified coins.
+
 ## Usage
 
 There are basically two types of access to the API: 
@@ -17,94 +21,134 @@ There are basically two types of access to the API:
 * Retrieve the current exchange information
 
 ```
-mercado-bitcoin.core> (info-ticker)
-;=> {:ticker {:high 735.58086,
-              :low 690.01011,
-              :vol 148.13091468,
-              :last 706.00001,
-              :buy 708.47146,
-              :sell 717.29897,
-              :date #<DateTime2015-04-29T03:00:41.000Z>}}
+mercado-bitcoin.btc> (ticker)
+;=> {:ticker {:high 750.0,
+              :low 716.06231,
+              :vol 134.4016074,
+              :last 737.01,
+              :buy 737.07674,
+              :sell 749.14159,
+              :date #<DateTime 2015-05-01T03:01:53.000Z>}}
 ```
 
 * Retrieve current orderbook
 ```
-mercado-bitcoin.core> (info-orderbook)
-;=> {:asks [[717.29897 0.08042057] [717.29966 1.63798] ... ],
-     :bids [[708.14374 0.61287116] [708.09008 1.47339109] ...]}
+mercado-bitcoin.btc> (orderbook)
+;=> {:asks [[749.54958 0.14752609] [749.54959 0.48295231] ...],
+     :bids [[737.07674 0.21569403] [737.00001 3.71405] ...]}
 ```
 
 ### Manipulating trade orders
 First you need to call a trader to be your operator, but passing your credentials
 
 ```
-mercado-bitcoin.core> (def trader (get-trader cred/mercado-tapi-codigo cred/mercado-tapi-chave cred/PIN))
-#'mercado-bitcoin.core/trader
+mercado-bitcoin.btc> (def trader (get-trader mercado-tapi-codigo mercado-tapi-chave PIN))
+;=> #'mercado-bitcoin.btc/trader
 ```
 
 Than you can send a buy order
 
 ```
-mercado-bitcoin.core> (create-order trader :buy 1 0.01)
-;=> {:return {:1945979 {:status "active",
-                        :operations {},
-                        :created #<DateTime 2015-04-29T20:47:38.000Z>,
-                        :price 1.0,
-                        :volume 0.01,
-                        :pair "btc_brl",
-                        :type "buy"}},
+mercado-bitcoin.btc> (create-order trader :buy 1 0.01)
+;=> {:return {1969656 {:status "active",
+                       :operations {},
+                       :created #<DateTime 2015-05-01T17:53:08.000Z>,
+                       :price 1.0,
+                       :volume 0.01,
+                       :pair "btc_brl",
+                       :type "buy"}},
+     :success 1}
+
+mercado-bitcoin.btc> (create-order trader :buy 1 0.01)
+;=> {:return {1969660 {:status "active",
+                       :operations {},
+                       :created #<DateTime 2015-05-01T17:53:16.000Z>,
+                       :price 1.0,
+                       :volume 0.01,
+                       :pair "btc_brl",
+                       :type "buy"}},
      :success 1}
 ```
 
-Then retrieve current status from the order
+Then retrieve current status for an order id interval
+```
+mercado-bitcoin.btc> (orders-list-status trader 1969656 1969660)
+;=> {:return {1969660 {:status "active",
+                      :operations {},
+                      :created #<DateTime 2015-05-01T17:53:16.000Z>,
+                      :price 1.0,
+                      :volume 0.01,
+                      :pair "btc_brl",
+                      :type "buy"},
+             1969656 {:status "active",
+                      :operations {},
+                      :created #<DateTime 2015-05-01T17:53:08.000Z>,
+                      :price 1.0,
+                      :volume 0.01,
+                      :pair "btc_brl",
+                      :type "buy"}},
+    :success 1}
+```
+
+Or for a single one
 
 ```
-mercado-bitcoin.core> (order-status trader 1945979)
-;=> {:return {:1945979 {:status "active",
-              :operations {},
-              :created #<DateTime 2015-04-29T20:47:38.000Z>,
-              :price 1.0,
-              :volume 0.01,
-              :pair "btc_brl",
-              :type "buy"}},
+mercado-bitcoin.btc> (order-status trader 1969656)
+;=> {:return {1969656 {:status "active",
+                       :operations {},
+                       :created #<DateTime 2015-05-01T17:53:08.000Z>,
+                       :price 1.0,
+                       :volume 0.01,
+                       :pair "btc_brl",
+                       :type "buy"}},
      :success 1}
 ```
 
-And if you changed your mind, cancel it
+Or if you changed your mind, cancel them
 
 ```
-mercado-bitcoin.core> (cancel-order trader 1945979)
-;=> {:return {:1945979 {:status "canceled",
-                        :operations {},
-                        :created #<DateTime 2015-04-29T20:47:38.000Z>,
-                        :price 1.0,
-                        :volume 0.01,
-                        :pair "btc_brl",
-                        :type "buy"}},
+mercado-bitcoin.btc> (cancel-order trader 1969656)
+;=> {:return {1969656 {:status "canceled",
+                       :operations {},
+                       :created #<DateTime 2015-05-01T17:53:08.000Z>,
+                       :price 1.0,
+                       :volume 0.01,
+                       :pair "btc_brl",
+                       :type "buy"}},
+     :success 1}
+
+mercado-bitcoin.btc> (cancel-order trader 1969660)
+;=> {:return {1969660 {:status "canceled",
+                       :operations {},
+                       :created #<DateTime 2015-05-01T17:53:16.000Z>,
+                       :price 1.0,
+                       :volume 0.01,
+                       :pair "btc_brl",
+                       :type "buy"}},
      :success 1}
 ```
      
 How about a sell order?
 
 ```
-mercado-bitcoin.core> (create-order trader :sell 10000 0.01)
-;=> {:return {:1946021 {:status "active",
-                        :operations {},
-                        :created #<DateTime 2015-04-29T20:50:09.000Z>,
-                        :price 10000.0,
-                        :volume 0.01,
-                        :pair "btc_brl",
-                        :type "sell"}},
+mercado-bitcoin.btc> (create-order trader :sell 10000 0.01)
+;=> {:return {1969982 {:status "active",
+                       :operations {},
+                       :created #<DateTime 2015-05-01T18:11:00.000Z>,
+                       :price 10000.0,
+                       :volume 0.01,
+                       :pair "btc_brl",
+                       :type "sell"}},
      :success 1}
-
-mercado-bitcoin.core> (cancel-order trader 1946021)
-;=> {:return {:1946021 {:status "canceled",
-                        :operations {},
-                        :created #<DateTime 2015-04-29T20:50:09.000Z>,
-                        :price 10000.0,
-                        :volume 0.01,
-                        :pair "btc_brl",
-                        :type "sell"}},
+                       
+mercado-bitcoin.btc> (cancel-order trader 1969982)
+;=> {:return {1969982 {:status "canceled",
+                       :operations {},
+                       :created #<DateTime 2015-05-01T18:11:00.000Z>,
+                       :price 10000.0,
+                       :volume 0.01,
+                       :pair "btc_brl",
+                       :type "sell"}},
      :success 1}
 ```
 
