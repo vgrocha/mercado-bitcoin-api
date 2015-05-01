@@ -10,9 +10,6 @@
   (:import [org.jsoup Jsoup]))
 
 
-(def ticker "https://www.mercadobitcoin.com.br/api/ticker/")
-(def orderbook "https://www.mercadobitcoin.com.br/api/orderbook/")
-(def trades "https://www.mercadobitcoin.com.br/api/trades/")
 (def trade-address "https://www.mercadobitcoin.com.br/tapi/")
 
 (def from-seconds-ts
@@ -63,18 +60,3 @@
              :body
              (json/read-str :key-fn keyword :value-fn answer-parser))))))
 
-;;all communications wires are set up
-;;some syntactic sugar
-(def info-orderbook #(info orderbook))
-
-(def info-ticker #(info ticker))
-
-(defn order-status [trader id]
-  (trader "OrderList" :from_id id :end_id id :pair "btc_brl"))
-
-(defn create-order [trader type price volume]
-  {:pre [(#{:buy :sell} type)]}
-  (trader "Trade" :pair "btc_brl" :type (name type) :volume volume :price price))
-
-(defn cancel-order [trader id]
-  (trader "CancelOrder" :pair "btc_brl" :order_id id))
