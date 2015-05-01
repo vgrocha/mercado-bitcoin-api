@@ -4,10 +4,12 @@
 
 (def ticker-address "https://www.mercadobitcoin.com.br/api/ticker_litecoin/")
 (def orderbook-address "https://www.mercadobitcoin.com.br/api/orderbook_litecoin/")
-
+(def trades-address "https://www.mercadobitcoin.net/api/trades_litecoin/")
 
 ;;all communications wires are set up
 ;;some syntactic sugar
+(def trades #(info trades-address))
+
 (def orderbook #(info orderbook-address))
 
 (def ticker #(info ticker-address))
