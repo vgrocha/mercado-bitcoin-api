@@ -1,23 +1,24 @@
-# mercado-bitcoin
+# mercado-bitcoin-api
 
-A Clojure library designed to use the mercadobitcoin.com.br API for
-trading Bitcoins.
+This is a Clojure library designed to connect to the mercadobitcoin.com.br API for
+trading Cryptocurrencies (on this date, BTC or LTC).
 
 The library abstract all the plumbing necessary to correctly interact
 with the API. The returned value is the JSON parsed into a Clojure
-map, where the dates are clj-time objects.
+map, as seen below. Moreover, the dates become clj-time objects.
 
-There is the core namespace which is responsible for the basics of
+In terms of the library structure, there is the 'core' namespace which is responsible for the basics of
 communication and then the 'btc' and 'ltc' namespaces, which
 specialize the communication for the specified coins.
 
 ## Usage
 
 There are basically two types of access to the API: 
+
 1) obtaining information 
 2) manipulating the trade orders
 
-### Obtaining information
+### 1) Obtaining information
 * Retrieve the current exchange information
 
 ```
@@ -38,15 +39,25 @@ mercado-bitcoin.btc> (orderbook)
      :bids [[737.07674 0.21569403] [737.00001 3.71405] ...]}
 ```
 
+* Retrieve trades
+```
+mercado-bitcoin.btc> (trades)
+;=> [{:date #<DateTime 2015-04-27T23:41:38.000Z>, :price 689.99999, :amount 0.07246377, :tid 130368, :type "buy"}
+     {:date #<DateTime 2015-04-27T23:47:57.000Z>, :price 689.99998, :amount 0.06705797, :tid 130369, :type "buy"}
+     ...
+    ]
+```
+
 ### Manipulating trade orders
-First you need to call a trader to be your operator, but passing your credentials
+First you need to call a trader to be your operator, but he won't
+listen to you without some credentials:
 
 ```
 mercado-bitcoin.btc> (def trader (get-trader mercado-tapi-codigo mercado-tapi-chave PIN))
 ;=> #'mercado-bitcoin.btc/trader
 ```
 
-Than you can send a buy order
+Than you can send buy orders
 
 ```
 mercado-bitcoin.btc> (create-order trader :buy 1 0.01)
@@ -70,7 +81,7 @@ mercado-bitcoin.btc> (create-order trader :buy 1 0.01)
      :success 1}
 ```
 
-Then retrieve current status for an order id interval
+Check their current status
 ```
 mercado-bitcoin.btc> (orders-list-status trader 1969656 1969660)
 ;=> {:return {1969660 {:status "active",
@@ -90,7 +101,7 @@ mercado-bitcoin.btc> (orders-list-status trader 1969656 1969660)
     :success 1}
 ```
 
-Or for a single one
+Or just check the status for a single order
 
 ```
 mercado-bitcoin.btc> (order-status trader 1969656)
@@ -104,7 +115,7 @@ mercado-bitcoin.btc> (order-status trader 1969656)
      :success 1}
 ```
 
-Or if you changed your mind, cancel them
+If you change your mind, just cancel them
 
 ```
 mercado-bitcoin.btc> (cancel-order trader 1969656)
@@ -151,6 +162,9 @@ mercado-bitcoin.btc> (cancel-order trader 1969982)
                        :type "sell"}},
      :success 1}
 ```
+
+There you have it! Remember that there are all the equivalent
+functionalities for LTC in the ltc namespace.
 
 ## License
 
