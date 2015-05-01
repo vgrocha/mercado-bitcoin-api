@@ -18,15 +18,25 @@
 (def to-seconds-ts
   #(int (/ (c/to-long %) 1000)))
 
+(defn- answer-parser [key value]
+  (case key
+    :date (from-seconds-ts value)
+    :created (from-seconds-ts (Long/parseLong value))
+    :price (if (number? value) value (Double/parseDouble value))
+    :volume (if (number? value) value (Double/parseDouble value))
+    :rate (if (number? value) value (Double/parseDouble value))
+    value))
+
+(defn answer-key-parser [key]
+  {:pre [(string? key)]}
+  (try (Integer/parseInt key)
+       (catch NumberFormatException e (keyword key))))
+
 (defn info [address]
-  (let [ans (-> (client/get address {:retry-handler (fn [ex try-count http-context]
-                                                      (Thread/sleep 3000)
-                                                      (if (> try-count 4) false true))})
+  (let [ans (-> (client/get address)
                 :body
-                (json/read-str :key-fn keyword
-                               :value-fn #(if (= :date %1)
-                                            (from-seconds-ts %2)
-                                            %2)))]
+                (json/read-str :key-fn answer-key-parser
+                               :value-fn answer-parser))]
     ans))
 
 (defn- wrap-credentials-http-request [tapi-codigo tapi-chave PIN]
@@ -42,15 +52,6 @@
                      {:headers header
                       :form-params params})))))
 
-(defn- answer-parser [key value]
-  (case key
-    :date (from-seconds-ts value)
-    :created (from-seconds-ts (Long/parseLong value))
-    :price (if (number? value) value (Double/parseDouble value))
-    :volume (if (number? value) value (Double/parseDouble value))
-    :rate (if (number? value) value (Double/parseDouble value))
-    value))
-
 (defn get-trader [tapi-codigo tapi-chave PIN]
   (let [trader (wrap-credentials-http-request tapi-codigo tapi-chave PIN)]
     (fn
@@ -58,5 +59,5 @@
          ;;remember the Tonce problem >: /
          (-> (trader method params)
              :body
-             (json/read-str :key-fn keyword :value-fn answer-parser))))))
+             (json/read-str :key-fn answer-key-parser :value-fn answer-parser))))))
 
